@@ -1,6 +1,6 @@
 # cyw43-driver module for the Zephyr OS
 
-This is an integration of the cyw43-driver code for use with the Zephyr OS and its native IP stack. It currently only contains board support for Raspberry Pi Pico hardware, but can easily be extended to others. 
+This is an integration of the georgerobotics cyw43-driver code for use with the Zephyr OS and its native IP stack. It currently only contains board support for Raspberry Pi Pico hardware, but can easily be extended to others. 
 
 ## Building a sample Zephyr image
 ### Set up Zephyr development environment
@@ -24,10 +24,10 @@ The image will run the Zephyr network shell on the serial console, which can be 
   uart:~$ wifi connect <your ssid> <your passphrase>
 ```
 
-You can see the full set of wifi subcommands, which can be used to set up an access point or perform other wifi management and control functions, by issuing the "wifi" command with no arguments. 
+You can see the full set of wifi subcommands, which can be used to set up an access point or perform other wifi management and control functions, by issuing the **wifi** command with no arguments. 
 
 ### Autoconnecting to your 
-If you wish for your image to automatically connect to your own wifi network, uncomment the two lines in app/local.conf and fill them in with your wifi credentials.
+If you wish for your image to automatically connect to your own wifi network, uncomment the two lines in **app/local.conf** and fill them in with your wifi credentials.
 
 ### Providing support for other boards
 In order to provide support for other boards, a device tree source overlay file will need to be provided to tell the build how the cyw43 module is connected to the system (SDIO or SPI, and which particular pins to be used for that connection).
@@ -37,9 +37,3 @@ The overlay file for the Pico W can be used as an example:
 cyw43-driver/zephyr_build/app/boards/rpi_pico_w.overlay
 ```
 
-
-This cyw43-driver is free only for non-commercial use (see LICENSE in this directory).
-This cyw43-driver is also available for use with Raspberry Pi Ltd semiconductor
-devices under different terms (see LICENSE.RP in this directory).
-
-For commercial licensing options please email contact@georgerobotics.com.au.
