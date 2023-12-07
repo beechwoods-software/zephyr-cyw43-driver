@@ -10,7 +10,7 @@
 #include <zephyr/device.h>
 #include <zephyr/drivers/led.h>
 
-#include "georgerobotics/cyw43.h"
+#include "cyw43.h"
 
 #define DT_DRV_COMPAT infineon_cyw43_led
 

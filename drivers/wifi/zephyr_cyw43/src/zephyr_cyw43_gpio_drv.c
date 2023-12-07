@@ -12,8 +12,8 @@
 
 #include <hardware/gpio.h>
 #include <zephyr/logging/log.h>
-#include "georgerobotics/cyw43.h"
-#include "georgerobotics/cyw43_country.h"
+#include "cyw43.h"
+#include "cyw43_country.h"
 
 #define DT_DRV_COMPAT infineon_cyw43_gpio
 

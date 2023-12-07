@@ -11,8 +11,8 @@
 
 #include "zephyr_cyw43_drv.h"
 
-#include "georgerobotics/cyw43.h"
-#include "georgerobotics/cyw43_country.h"
+#include "cyw43.h"
+#include "cyw43_country.h"
 #include "zephyr_cyw43_log.h"
 
 static void cyw43_set_irq_enabled(bool);
