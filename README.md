@@ -26,7 +26,7 @@ The image will run the Zephyr network shell on the serial console, which can be 
 
 You can see the full set of wifi subcommands, which can be used to set up an access point or perform other wifi management and control functions, by issuing the **wifi** command with no arguments. 
 
-### Autoconnecting to your 
+### Autoconnecting to your wifi network
 If you wish for your image to automatically connect to your own wifi network, uncomment the two lines in **app/local.conf** and fill them in with your wifi credentials.
 
 ### Providing support for other boards
