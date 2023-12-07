@@ -2,7 +2,7 @@
 
 if(CONFIG_WIFI_ZEPHYR_CYW43)
   if(CONFIG_USE_PICOWI_PIOSPI)
-    zephyr_library_include_directories(src/ src/cyw43-driver/firmware/ src/cyw43-driver/firmware/)
+    zephyr_library_include_directories(src/ src/cyw43-driver/src/ src/cyw43-driver/firmware/)
     
     zephyr_library_sources(
       src/zephyr_cyw43_drv.c
