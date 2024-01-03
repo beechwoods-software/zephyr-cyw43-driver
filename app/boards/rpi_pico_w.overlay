@@ -21,7 +21,7 @@
 		status = "okay";
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clocks = < &system_clk >;
+		clocks = < &clk_sys >;
     	cs-gpios = <&gpio0 25 GPIO_ACTIVE_LOW>;
 		clk-gpios = <&gpio0 29 GPIO_ACTIVE_HIGH>;
 		sio-gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
