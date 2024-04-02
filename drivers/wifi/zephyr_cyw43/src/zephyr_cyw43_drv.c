@@ -451,8 +451,10 @@ static void zephyr_cyw43_iface_init(struct net_if *iface)
 
         net_if_dormant_on(iface);
 
+#if defined(CONFIG_NET_DHCPV4)        
         net_dhcpv4_stop(iface);
-
+#endif
+        
         zephyr_cyw43_unlock(zephyr_cyw43_dev);
 
         return;

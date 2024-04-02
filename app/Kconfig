@@ -10,3 +10,5 @@ menu "Zephyr"
 source "Kconfig.zephyr"
 endmenu
 
+module = wifi-example-app
+module-str = Example App for Pico W wifi

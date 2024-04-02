@@ -22,3 +22,4 @@ manifest:
           - cmsis      # required by the ARM port
           - hal_rpi_pico
           - mbedtls
+          - hal_espressif
