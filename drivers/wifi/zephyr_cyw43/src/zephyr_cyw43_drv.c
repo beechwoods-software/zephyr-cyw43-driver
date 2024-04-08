@@ -15,6 +15,10 @@
 #include "cyw43_country.h"
 #include "zephyr_cyw43_log.h"
 
+#if defined(CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4)
+#include <zephyr/net/dhcpv4_server.h>
+#endif
+
 static void cyw43_set_irq_enabled(bool);
 
 #define DT_DRV_COMPAT infineon_cyw43
@@ -242,11 +246,11 @@ static int zephyr_cyw43_connect(zephyr_cyw43_dev_t *zephyr_cyw43_device)
         else {
                 net_if_dormant_off(zephyr_cyw43_device->iface);
 
-#if defined(CONFIG_NET_DHCPV4)
+#if defined(CONFIG_CYW43_WIFI_STA_AUTO_DHCPV4)
                 net_dhcpv4_restart(zephyr_cyw43_device->iface);
-#endif
+#else
                 wifi_mgmt_raise_connect_result_event(zephyr_cyw43_device->iface, rv);
-
+#endif
                 LOG_DBG("zephyr_cyw43_connect connected.\n");
         }
 
@@ -264,7 +268,7 @@ static int zephyr_cyw43_disconnect(zephyr_cyw43_dev_t *zephyr_cyw43_device)
 
         LOG_DBG("Disconnected!");
 
-#if defined(CONFIG_NET_DHCPV4)
+#if defined(CONFIG_CYW43_WIFI_STA_AUTO_DHCPV4)
         net_dhcpv4_stop(zephyr_cyw43_device->iface);
 #endif
         net_if_dormant_on(zephyr_cyw43_device->iface);
@@ -279,7 +283,9 @@ error:
 static int zephyr_cyw43_enable_ap(zephyr_cyw43_dev_t *zephyr_cyw43_device)
 {
         int rv=0;
-
+#if defined(CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4)        
+        int dhcp_rc=0;
+#endif
         const uint8_t *cyw43_ssid = (const uint8_t *)zephyr_cyw43_device->ap_params.ssid;
         const uint8_t *cyw43_password = (const uint8_t *)zephyr_cyw43_device->ap_params.psk;
  
@@ -339,16 +345,65 @@ static int zephyr_cyw43_enable_ap(zephyr_cyw43_dev_t *zephyr_cyw43_device)
         zephyr_cyw43_unlock(zephyr_cyw43_device);
 
         cyw43_wifi_set_up(&cyw43_state, CYW43_ITF_AP, true, CYW43_COUNTRY_WORLDWIDE);
+        
+#if defined(CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4)
+        struct in_addr addr;
+        static struct in_addr netmask;
+        struct net_if *iface = zephyr_cyw43_device->iface;
+        
+        if (net_addr_pton(AF_INET, CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS, &addr)) {
+            NET_ERR("Invalid address: %s", CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS);
+            return rv;
+        }
+        LOG_INF("Set IP addr to %s", CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS);
+        
+        if (net_addr_pton(AF_INET, CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_NETMASK, &netmask)) {
+            NET_ERR("Invalid netmask: %s", CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_NETMASK);
+            return rv;
+        }
+        LOG_INF("Set IP netmask to %s", CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_NETMASK);
 
+        if(NULL == net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0))  {
+            LOG_ERR("net_if_ipv4_addr_add failed %d", errno);
+            return rv;
+        }
+        net_if_ipv4_set_netmask(iface, &netmask);
+        
+        /* Set the starting address for the dhcp server pool */
+        addr.s4_addr[3]++;
+
+        char address_buffer[16];
+        LOG_INF("starting dhcpv4 server with %s", net_addr_ntop(AF_INET, &addr, address_buffer, 16));
+
+        net_if_dormant_off(iface);
+        
+        dhcp_rc = net_dhcpv4_server_start(iface, &addr);
+        if(dhcp_rc < 0) {
+            LOG_ERR("Unable to start dhcp server %d", dhcp_rc);
+        }
+
+#endif
+        
         return rv;
 }
 
 static int zephyr_cyw43_disable_ap(zephyr_cyw43_dev_t *zephyr_cyw43_device)
 {
+        int rc = 0;
+        struct net_if *iface = zephyr_cyw43_device->iface;
+
         cyw43_wifi_set_up(&cyw43_state, CYW43_ITF_AP, false, CYW43_COUNTRY_WORLDWIDE);
         cyw43_wifi_set_up(&cyw43_state, CYW43_ITF_STA, true, CYW43_COUNTRY_WORLDWIDE);
         cyw43_state.itf_state &= ~(1 << CYW43_ITF_AP); /* cyw43_ctrl doesn't handle reset the itf state bit. */
-        return 0;
+
+#if defined(CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4)
+        rc = net_dhcpv4_server_stop(iface);
+        if(rc < 0) {
+            LOG_ERR("Unable to stop dhcp server %d", rc);
+        }
+#endif
+        net_if_dormant_on(iface);
+        return rc;
 }
 
 static int zephyr_cyw43_set_pm(zephyr_cyw43_dev_t *zephyr_cyw43_device)
@@ -421,7 +476,11 @@ static int zephyr_cyw43_send(const struct device *dev, struct net_pkt *pkt)
                 goto out;
         }
 
-        rv = cyw43_send_ethernet(&cyw43_state, CYW43_ITF_STA, pkt_len, (void *)(zephyr_cyw43_device->frame_buf), false);
+        rv = cyw43_send_ethernet(&cyw43_state,
+                                 ((cyw43_state.itf_state >> CYW43_ITF_AP) ? CYW43_ITF_AP : CYW43_ITF_STA),
+                                 pkt_len,
+                                 (void *)(zephyr_cyw43_device->frame_buf),
+                                 false);
 
 #if defined(CONFIG_NET_STATISTICS_WIFI)
         zephyr_cyw43_device->stats.bytes.sent += pkt_len;
@@ -451,7 +510,7 @@ static void zephyr_cyw43_iface_init(struct net_if *iface)
 
         net_if_dormant_on(iface);
 
-#if defined(CONFIG_NET_DHCPV4)        
+#if defined(CONFIG_CYW43_WIFI_STA_AUTO_DHCPV4)        
         net_dhcpv4_stop(iface);
 #endif
         

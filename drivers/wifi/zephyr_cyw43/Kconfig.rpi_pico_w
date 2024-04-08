@@ -31,9 +31,40 @@ config USE_PICOWI_PIOSPI
 	default y
 
 config LED_INIT_PRIORITY
-    int "Wifi led driver init priority"
-    default 80
+        int "Wifi led driver init priority"
+        default 80
 
+# Options to have the driver start the DHCP client (for STA mode) or start
+# the DHCP server (for AP mode).
+
+config CYW43_WIFI_STA_AUTO_DHCPV4
+        bool "Start DHCP client"
+        default n
+        select NET_DHCPV4        
+        help
+          Automatically start DHCP client in STA mode
+          
+config CYW43_WIFI_AP_AUTO_DHCPV4
+        bool "Start DHCP server"
+        default n
+        select NET_DHCPV4_SERVER
+        help
+          Automatically start DHCP server in AP mode
+
+config CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS
+        string "IP address to be used for driver initiated AP network"
+        depends on CYW43_WIFI_AP_AUTO_DHCPV4
+        default "192.168.1.1"
+        help
+          IP address to be used for driver initiated AP network DHCP server
+
+config CYW43_WIFI_AP_AUTO_DHCPV4_NETMASK
+        string "IP netmask to be used for driver initiated AP network"
+        depends on CYW43_WIFI_AP_AUTO_DHCPV4
+        default "255.255.255.0"
+        help
+          IP netmask to be used for driver initiated AP network DHCP server
+          
 # Power Save params
 
 config WIFI_ZEPHYR_CYW43_POWERSAVE_MODE
