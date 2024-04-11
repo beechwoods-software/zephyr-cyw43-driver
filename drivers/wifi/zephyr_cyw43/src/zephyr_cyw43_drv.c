@@ -294,6 +294,8 @@ static int zephyr_cyw43_enable_ap(zephyr_cyw43_dev_t *zephyr_cyw43_device)
         uint32_t cyw43_ssid_len;
         uint32_t cyw43_password_len;
 
+        struct net_if *iface = zephyr_cyw43_device->iface;
+
         LOG_DBG("ap_params.security = %d\n", zephyr_cyw43_device->ap_params.security);
         switch (zephyr_cyw43_device->ap_params.security) {
         case WIFI_SECURITY_TYPE_NONE:
@@ -349,7 +351,6 @@ static int zephyr_cyw43_enable_ap(zephyr_cyw43_dev_t *zephyr_cyw43_device)
 #if defined(CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4)
         struct in_addr addr;
         static struct in_addr netmask;
-        struct net_if *iface = zephyr_cyw43_device->iface;
         
         if (net_addr_pton(AF_INET, CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS, &addr)) {
             NET_ERR("Invalid address: %s", CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS);
@@ -374,14 +375,15 @@ static int zephyr_cyw43_enable_ap(zephyr_cyw43_dev_t *zephyr_cyw43_device)
 
         char address_buffer[16];
         LOG_INF("starting dhcpv4 server with %s", net_addr_ntop(AF_INET, &addr, address_buffer, 16));
-
+#endif
+        
         net_if_dormant_off(iface);
         
+#if defined(CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4)        
         dhcp_rc = net_dhcpv4_server_start(iface, &addr);
         if(dhcp_rc < 0) {
             LOG_ERR("Unable to start dhcp server %d", dhcp_rc);
         }
-
 #endif
         
         return rv;
