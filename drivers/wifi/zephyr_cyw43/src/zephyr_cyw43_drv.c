@@ -351,6 +351,7 @@ static int zephyr_cyw43_enable_ap(zephyr_cyw43_dev_t *zephyr_cyw43_device)
 #if defined(CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4)
         struct in_addr addr;
         static struct in_addr netmask;
+        static struct in_addr gateway;
         
         if (net_addr_pton(AF_INET, CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS, &addr)) {
             NET_ERR("Invalid address: %s", CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS);
@@ -364,13 +365,19 @@ static int zephyr_cyw43_enable_ap(zephyr_cyw43_dev_t *zephyr_cyw43_device)
         }
         LOG_INF("Set IP netmask to %s", CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_NETMASK);
 
+        if (net_addr_pton(AF_INET, CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS, &gateway)) {
+            NET_ERR("Invalid gateway: %s", CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS);
+            return rv;
+        }
+        LOG_INF("Set IP gateway to %s", CONFIG_CYW43_WIFI_AP_AUTO_DHCPV4_ADDRESS);
+
         if(NULL == net_if_ipv4_addr_add(iface, &addr, NET_ADDR_MANUAL, 0))  {
             LOG_ERR("net_if_ipv4_addr_add failed %d", errno);
             return rv;
         }
         net_if_ipv4_set_netmask(iface, &netmask);
-        
-        /* Set the starting address for the dhcp server pool */
+        net_if_ipv4_set_gw(iface, &gateway);
+
         addr.s4_addr[3]++;
 
         char address_buffer[16];
@@ -625,22 +632,6 @@ static int zephyr_cyw43_mgmt_connect(const struct device *dev,
 
         LOG_DBG("");
 
-        if ((cyw43_state.itf_state >> CYW43_ITF_STA) & 1) {
-                int link_status=cyw43_wifi_link_status(&cyw43_state, CYW43_ITF_STA);
-
-                if (link_status == CYW43_LINK_JOIN || link_status == CYW43_LINK_NONET) {
-                        LOG_ERR("Already connected.\n");
-                        rv = -EAGAIN;
-                        return rv;
-                }
-        }
-
-        if ((cyw43_state.itf_state >> CYW43_ITF_AP) & 1) {
-                LOG_ERR("Please disable access point mode before initiating a client connection.\n");
-                rv = -EBUSY;
-                return rv;
-        }
-
         zephyr_cyw43_lock(zephyr_cyw43_device);
 
         /* Copy the relevant parameters into our own structure, because there's no
@@ -683,17 +674,6 @@ static int zephyr_cyw43_mgmt_ap_enable(const struct device *dev,
                 LOG_ERR("Already in AP mode..\n");
                 rv = -EAGAIN;
                 return rv;
-        }
-
-        if ((cyw43_state.itf_state >> CYW43_ITF_STA) & 1) {
-
-                int link_status=cyw43_wifi_link_status(&cyw43_state, CYW43_ITF_STA);
-
-                if (link_status == CYW43_LINK_JOIN || link_status == CYW43_LINK_NONET) {
-                        LOG_ERR("Currently connected as a client. Please disconnect before enabling AP.\n");
-                        rv = -EBUSY;
-                        return rv;
-                }
         }
 
         zephyr_cyw43_lock(zephyr_cyw43_device);
