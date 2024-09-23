@@ -11,6 +11,7 @@ menuconfig WIFI_ZEPHYR_CYW43
 	select GPIO
         select ENTROPY_GENERATOR
         select TEST_RANDOM_GENERATOR
+        select PICOSDK_USE_UART
 	#select SPI
 	#select SPI_RPI_PICO_PIO	
         select PICOSDK_USE_PIO # This can be removed once Zephyr PIO-SPI works
