@@ -37,3 +37,8 @@ The overlay file for the Pico W can be used as an example:
 cyw43-driver/zephyr_build/app/boards/rpi_pico_w.overlay
 ```
 
+### Zephyr 3.7 support
+Note that the instructions above will still build a Zephyr 3.6 image. This is because there is a serious bug in v3.7.0, which causes fatal exceptions on the ARM Cortex M0 architecture that the RP2040 uses. For info about this issue and the patch required to fix it, see: https://github.com/zephyrproject-rtos/zephyr/commit/b24c5201a0ab9de8395e73a4c52d49bf084143f0
+
+You can build a 3.7 image based on a changeset that isn't in an official release yet by replacing "--mr main" with "--mr 3.7_dev" in the build instructions above. Presumablly this bug-fix will be included in Zephyr release v3.7.1, so when that becomes available, I'll make 3.7.1 based builds the default on the main branch of the zephyr-cyw43-driver repository.
+
