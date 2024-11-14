@@ -14,7 +14,7 @@ manifest:
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: b24c5201a0ab9de8395e73a4c52d49bf084143f0
+      revision: 3.7.1-rc1
       import:
         # By using name-allowlist we can clone only the modules that are
         # strictly needed by the application.
