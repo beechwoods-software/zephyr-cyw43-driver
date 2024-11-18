@@ -368,7 +368,7 @@ static int zephyr_cyw43_enable_ap(zephyr_cyw43_dev_t *zephyr_cyw43_device)
             LOG_ERR("net_if_ipv4_addr_add failed %d", errno);
             return rv;
         }
-        net_if_ipv4_set_netmask(iface, &netmask);
+        net_if_ipv4_set_netmask_by_addr(iface, &addr, &netmask);
         
         /* Set the starting address for the dhcp server pool */
         addr.s4_addr[3]++;

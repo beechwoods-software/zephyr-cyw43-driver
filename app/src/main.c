@@ -42,7 +42,7 @@ int main(void)
   else {
     printf("To configure wifi, either:\n");
     printf("\n");
-    printf("  1. Run 'wifi connect \"<SSID>\" \"<passphrase>\"' on the command line.\n");
+    printf("  1. Run 'wifi connect -s <SSID> -p <PSK> -k <security type... probably 1>' on the command line.\n");
     printf("\n");
     printf("                        - or -\n");
     printf("\n");
