@@ -23,3 +23,4 @@ manifest:
           - hal_rpi_pico
           - mbedtls
           - hal_espressif
+          - hal_infineon
