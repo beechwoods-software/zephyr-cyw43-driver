@@ -294,19 +294,18 @@ uint32_t read_reg_u32_swap(cyw43_int_t *self, uint32_t fn, uint32_t reg) {
         uint32_t buf[2] = {0};
         //CYW43_VDEBUG("Calling read_reg_u32_swap()");        
         assert(fn != BACKPLANE_FUNCTION);
-        /*  DEBUG */
-        /*  buf[0] = SWAP32(make_cmd(false, true, fn, reg, 4)); */
         buf[0] = make_cmd(false, true, fn, reg, 4);
-        printf("command=0x%08X\n", buf[0]);
+        CYW43_VDEBUG("command=0x%08X\n", buf[0]);
         buf[0] = SWAP32(buf[0]);
-        printf("swapped=0x%08X\n", buf[0]);
-        /* DEBUG END */
+        CYW43_VDEBUG("swapped=0x%08X\n", buf[0]);
         int ret = cyw43_spi_transfer(self, (uint8_t *)buf, 4, (uint8_t *)buf, 8);
         if (ret != 0) {
                 return ret;
         }
-        printf("buf[0]: 0x%08X, swapped: 0x%08X\n", buf[0], SWAP32(buf[0]));
-        printf("buf[1]: 0x%08X, swapped: 0x%08X\n", buf[1], SWAP32(buf[1]));
+        CYW43_VDEBUG("buf[0]: 0x%08X, swapped: 0x%08X\n",
+                     buf[0], SWAP32(buf[0]));
+        CYW43_VDEBUG("buf[1]: 0x%08X, swapped: 0x%08X\n",
+                     buf[1], SWAP32(buf[1]));
         return SWAP32(buf[1]);
 }
 
