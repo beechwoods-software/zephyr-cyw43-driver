@@ -28,11 +28,6 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME, LOG_LEVEL);
 #define ZEPHYR_CYW43_WORKQUEUE_STACK_SIZE 1024
 K_KERNEL_STACK_DEFINE(zephyr_cyw43_work_q_stack, ZEPHYR_CYW43_WORKQUEUE_STACK_SIZE);
 
-static const struct zephyr_cyw43_cfg zephyr_cyw43_cfg = {
-        .irq_gpio = GPIO_DT_SPEC_GET(DT_NODELABEL(infineon_cyw43_module), host_wake_gpios),
-        .wl_on_gpio = GPIO_DT_SPEC_GET(DT_NODELABEL(infineon_cyw43_module), wl_on_gpios),
-};
-
 static zephyr_cyw43_dev_t zephyr_cyw43_0; /* static instance */
 zephyr_cyw43_dev_t *zephyr_cyw43_dev = &zephyr_cyw43_0;
 
@@ -928,8 +923,8 @@ void cyw43_delay_us(uint32_t us) {
 
 static void cyw43_set_irq_enabled(bool enabled)
 {
-        /* LOG_DBG("Calling cyw43_set_irq_enabled(%s)", (enabled ? "true" : "false")); */
-        gpio_pin_interrupt_configure_dt(&zephyr_cyw43_cfg.irq_gpio, (enabled?(GPIO_INT_ENABLE|GPIO_INT_LEVEL_HIGH):GPIO_INT_DISABLE));
+        LOG_DBG("Calling cyw43_set_irq_enabled(%s)\n", (enabled ? "true" : "false"));
+        cyw43_spi_irq_enable(&cyw43_wifi_config, enabled); 
 }
 
 void cyw43_post_poll_hook(void)
@@ -953,17 +948,17 @@ static void zephyr_cyw43_register_cb()
 {
         int rv;
 
-        rv = gpio_pin_configure_dt(&zephyr_cyw43_cfg.irq_gpio, GPIO_INPUT);
+        rv = gpio_pin_configure_dt(&cyw43_wifi_config.host_wake_gpio, GPIO_INPUT);
         if (rv) {
-                LOG_ERR("Unable to configure GPIO pin %u", zephyr_cyw43_cfg.irq_gpio.pin);
+                LOG_ERR("Unable to configure GPIO pin %u", cyw43_wifi_config.host_wake_gpio.pin);
         }
 
         /* Note that this is technically a gpio_callback, not a true isr. */
         gpio_init_callback(&zephyr_cyw43_gpio_cb,
                            zephyr_cyw43_isr,
-                           BIT(zephyr_cyw43_cfg.irq_gpio.pin));
+                           BIT(cyw43_wifi_config.host_wake_gpio.pin));
 
-        rv = gpio_add_callback(zephyr_cyw43_cfg.irq_gpio.port, &zephyr_cyw43_gpio_cb);
+        rv = gpio_add_callback(cyw43_wifi_config.host_wake_gpio.port, &zephyr_cyw43_gpio_cb);
         if (rv) {
                 LOG_ERR("gpio_add_callback() returned %d", rv);
         }
@@ -1060,6 +1055,6 @@ static const struct net_wifi_mgmt_offload zephyr_cyw43_callbacks = {
 
 NET_DEVICE_DT_INST_DEFINE(0,
                           zephyr_cyw43_init, NULL,
-                          &zephyr_cyw43_0, &zephyr_cyw43_cfg, CONFIG_WIFI_INIT_PRIORITY,
+                          &zephyr_cyw43_0, &cyw43_wifi_config, CONFIG_WIFI_INIT_PRIORITY,
                           &zephyr_cyw43_callbacks, ETHERNET_L2,
                           NET_L2_GET_CTX_TYPE(ETHERNET_L2), NET_ETH_MTU);

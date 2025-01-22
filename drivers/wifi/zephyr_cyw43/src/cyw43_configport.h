@@ -37,10 +37,10 @@ extern bool enable_spi_packet_dumping;
 #include <stdlib.h>
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/pinctrl.h>
+#include <zephyr/drivers/spi.h>
 #include <time.h>
 #include <assert.h>
-
-static const struct device *rp2040_gpio = DEVICE_DT_GET(DT_NODELABEL(gpio0));
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,6 +104,23 @@ extern "C" {
 /* get the number of elements in a fixed-size array */
 #define CYW43_ARRAY_SIZE(a) count_of(a)
 
+
+static const struct device *rp2040_gpio = DEVICE_DT_GET(DT_NODELABEL(gpio0));
+
+struct cyw43_wifi_config {
+        struct spi_dt_spec bus_spi;
+    
+	struct gpio_dt_spec wl_on_gpio;
+        struct gpio_dt_spec host_wake_gpio;
+ 	struct gpio_dt_spec bus_select_gpio;
+
+        const struct pinctrl_dev_config *pcfg;
+};
+
+extern struct cyw43_wifi_config cyw43_wifi_config;
+
+extern  void cyw43_spi_irq_enable(struct cyw43_wifi_config *, bool);
+    
 static inline uint32_t cyw43_hal_ticks_us(void) {
   return (uint32_t) (1000 * k_uptime_get_32());
 }
@@ -113,6 +130,11 @@ static inline uint32_t cyw43_hal_ticks_ms(void) {
 }
 
 static inline int cyw43_hal_pin_read(cyw43_hal_pin_obj_t pin) {
+  /* this is annoying... shouldn't need to reconfigure it as an INPUT on each read, but
+     it doesn't work if I don't. It's not a resource intensive call and this function isn't
+     called terribly frequently, so I think this works fine for not, but should revisit at
+     some point. */ 
+  gpio_pin_configure_dt(&cyw43_wifi_config.host_wake_gpio, GPIO_INPUT);  
   return gpio_pin_get(rp2040_gpio, pin);
 }
 
@@ -131,10 +153,9 @@ static inline void cyw43_hal_pin_high(cyw43_hal_pin_obj_t pin) {
 #define CYW43_HAL_PIN_PULL_UP              (1)
 #define CYW43_HAL_PIN_PULL_DOWN            (2)
 
-#define CYW43_PIN_WL_REG_ON 23u
-#define CYW43_PIN_WL_CMD 24u
-#define CYW43_PIN_WL_CLOCK 29u
-#define CYW43_PIN_WL_CS 25u
+    
+#define CYW43_PIN_WL_REG_ON cyw43_wifi_config.wl_on_gpio.pin
+#define CYW43_PIN_WL_CMD cyw43_wifi_config.host_wake_gpio.pin
 #define CYW43_PIN_WL_HOST_WAKE CYW43_PIN_WL_CMD
 
 #define CYW43_WL_GPIO_COUNT 3

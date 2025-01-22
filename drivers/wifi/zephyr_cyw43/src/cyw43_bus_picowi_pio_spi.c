@@ -114,27 +114,6 @@ int cyw43_spi_init(cyw43_int_t *self) {
 
 void cyw43_spi_deinit(cyw43_int_t *self) {
         return;
-#if 0
-        if (self->bus_data) {
-                bus_data_t *bus_data = (bus_data_t *)self->bus_data;
-                if (bus_data->pio_sm >= 0) {
-                        if (bus_data->pio_offset != -1)
-                                pio_remove_program(bus_data->pio, &SPI_PROGRAM_FUNC, bus_data->pio_offset);
-                        pio_sm_unclaim(bus_data->pio, bus_data->pio_sm);
-                }
-                if (bus_data->dma_out >= 0) {
-                        dma_channel_cleanup(bus_data->dma_out);
-                        dma_channel_unclaim(bus_data->dma_out);
-                        bus_data->dma_out = -1;
-                }
-                if (bus_data->dma_in >= 0) {
-                        dma_channel_cleanup(bus_data->dma_in);
-                        dma_channel_unclaim(bus_data->dma_in);
-                        bus_data->dma_in = -1;
-                }
-                self->bus_data = NULL;
-        }
-#endif
 }
 
 int cyw43_spi_transfer(cyw43_int_t *self, const uint8_t *tx, size_t tx_length, uint8_t *rx,
@@ -204,40 +183,11 @@ int cyw43_spi_transfer(cyw43_int_t *self, const uint8_t *tx, size_t tx_length, u
 // Initialise our gpios
 void cyw43_spi_gpio_setup(void) {
         return;
-#if 0
-        printf("cyw43_spi_gpio_setup()\n");
-
-        /* Setup WL_REG_ON (23) */
-        gpio_init(WL_REG_ON);
-        gpio_set_dir(WL_REG_ON, GPIO_OUT);
-        gpio_pull_up(WL_REG_ON);
-
-        /* Setup CS (25) */
-        gpio_init(CS_PIN);
-        gpio_set_dir(CS_PIN, GPIO_OUT);
-        gpio_put(CS_PIN, true);
-
-        /* Setup DO, DI and IRQ (24) */
-        gpio_init(DATA_OUT_PIN);
-        gpio_set_dir(DATA_OUT_PIN, GPIO_OUT);
-        gpio_put(DATA_OUT_PIN, false);
-#endif
 }
 
 /* Reset wifi chip */
 void cyw43_spi_reset(void) {
         return;
-#if 0
-        printf("cyw43_spi_reset()\n");
-        gpio_put(WL_REG_ON, false); // off
-        k_busy_wait(20000);
-        gpio_put(WL_REG_ON, true); // on
-        k_busy_wait(250000);
-
-        // Setup IRQ (24) - also used for DO, DI
-        gpio_init(IRQ_PIN);
-        gpio_set_dir(IRQ_PIN, GPIO_IN);
-#endif
 }
 
 static inline uint32_t make_cmd(bool write, bool inc, uint32_t fn, uint32_t addr, uint32_t sz) {
