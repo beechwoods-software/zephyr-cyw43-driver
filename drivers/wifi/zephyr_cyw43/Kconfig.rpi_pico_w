@@ -12,9 +12,8 @@ menuconfig WIFI_ZEPHYR_CYW43
         select ENTROPY_GENERATOR
         select TEST_RANDOM_GENERATOR
         select PICOSDK_USE_UART
-	#select SPI
-	#select SPI_RPI_PICO_PIO	
-        select PICOSDK_USE_PIO # This can be removed once Zephyr PIO-SPI works
+	select SPI
+	select SPI_RPI_PICO_PIO
 	
 #if WIFI_ZEPHYR_CYW43
 config WIFI_ZEPHYR_CYW43_SHELL
@@ -31,7 +30,7 @@ config WIFI_CYW43_USE_CYW4343W
 
 config USE_PICOWI_PIOSPI
         bool "Use picowi PIO-SPI, but nothing else"
-	default y
+	default n
 
 config LED_INIT_PRIORITY
         int "Wifi led driver init priority"
