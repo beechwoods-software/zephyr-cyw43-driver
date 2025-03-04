@@ -1,0 +1,22 @@
+# Copyright (c) 2025, Parker Liu
+# SPDX-License-Identifier: Apache-2.0
+
+description: Infineon CYW43 GPIO controller
+
+compatible: "infineon,cyw43-gpio"
+
+include: gpio-controller.yaml
+
+properties:
+  "#gpio-cells":
+    const: 2
+
+  ngpios:
+    type: int
+    required: true
+    const: 3
+    description: Number of GPIOs supported
+
+gpio-cells:
+  - pin
+  - flags
