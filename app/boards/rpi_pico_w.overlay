@@ -8,8 +8,6 @@
                 	compatible = "infineon,cyw43";
 			reg = < 0x0 >;
 		        clocks = < &clocks RPI_PICO_CLKID_CLK_SYS >;
-		        #address-cells = <1>;
-		        #size-cells = <0>;
                       
                         spi-max-frequency = < 1000000 >;
 
@@ -24,10 +22,13 @@
 		        status = "okay";
 
                         cyw43_led: cyw43_led {	/* Pico W LED is on CYW43439 GPIO 0 */
-				compatible = "infineon,cyw43_led";
+				compatible = "infineon,cyw43-led";
 			};
 			cyw43_gpio: cyw43_gpio {
-				compatible = "infineon,cyw43_gpio";
+				compatible = "infineon,cyw43-gpio";
+                                gpio-controller;
+                                #gpio-cells = <2>;
+                                ngpios = <3>;
 			};
 		};
 	};
