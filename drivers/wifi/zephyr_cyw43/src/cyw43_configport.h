@@ -71,6 +71,10 @@ extern "C" {
 
 #define CYW43_SPI_PIO 1
 
+#ifdef CONFIG_BT
+#define CYW43_ENABLE_BLUETOOTH (1)
+#endif
+	
 #ifndef CYW43_CHIPSET_FIRMWARE_INCLUDE_FILE
 #if CYW43_ENABLE_BLUETOOTH
 #define CYW43_CHIPSET_FIRMWARE_INCLUDE_FILE "wb43439A0_7_95_49_00_combined.h"
@@ -199,6 +203,14 @@ void cyw43_post_poll_hook(void);
 
 #define CYW43_POST_POLL_HOOK cyw43_post_poll_hook();
 
+// Allow malloc and free to be changed
+#ifndef cyw43_malloc
+#define cyw43_malloc malloc
+#endif
+#ifndef cyw43_free
+#define cyw43_free free
+#endif
+	
 #ifdef __cplusplus
 }
 #endif

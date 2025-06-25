@@ -1,0 +1,9 @@
+# Copyright (c) 2025, Dave Rensberger
+# SPDX-License-Identifier: Apache-2.0
+
+description: Infineon CYW43 Bluetooth HCI interface.
+
+compatible: "infineon,cyw43-bt-hci"
+
+include: bt-hci.yaml
+    
