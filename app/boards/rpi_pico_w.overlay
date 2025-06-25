@@ -1,3 +1,10 @@
+/ {
+        chosen {
+	       zephyr,bt_hci = &cyw43_bt_hci;
+	};
+
+};
+
 
 &pio0 {
  	status = "okay";
@@ -30,6 +37,10 @@
                                 #gpio-cells = <2>;
                                 ngpios = <3>;
 			};
+			cyw43_bt_hci: cyw43_bt_hci {
+				compatible = "infineon,cyw43-bt-hci";
+			};
+
 		};
 	};
 };
