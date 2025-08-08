@@ -1,0 +1,103 @@
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/led/led.h>
+
+/*
+&wifi {
+        status = "okay";
+};
+&adc {
+      status = "okay";
+};
+*/
+
+
+/ {
+    chosen {
+	zephyr,bt_hci = &cyw43_bt_hci;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        led_ready: led_ready {
+            gpios = <&gpio0 13 ( GPIO_ACTIVE_HIGH) > ;
+        };
+    };
+    buttons {
+        compatible = "gpio-keys";
+        button0: button_0 {
+     	    gpios = < &gpio0 4 (GPIO_PULL_UP | GPIO_ACTIVE_LOW) >;
+     	    label = "button 0";
+   	    };
+   	    button1: button_1 {
+            gpios = < &gpio0 5 (GPIO_PULL_UP | GPIO_ACTIVE_LOW) >;
+     	    label = "button 1";
+        };
+    };
+    motion_sensors {
+        compatible = "gpio-keys";
+   	motionsensor: motionsensor {
+   	    gpios = < &gpio0 20 (GPIO_PULL_DOWN | GPIO_ACTIVE_HIGH) >;
+	    label = "motion sensor";
+        };	   
+    };
+    aliases {
+//        sensor = &adc;
+    };
+    zephyr,user {
+//      io-channels = <&adc 0>;
+    };
+};
+
+    
+&i2c0 {
+    pinctrl-0 = <&i2c0_default>; // default is SDA = GP4, SCL = GP5
+    pinctrl-names = "default";
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_STANDARD>;
+
+    st25dv: st25dv@a6 {
+        compatible = "st,st25dv";
+        reg = <0xa6>;
+        interrupt-gpios = <&gpio0 15 GPIO_ACTIVE_LOW>;
+        status = "okay";
+    };
+};
+
+&pio0 {
+ 	status = "okay";
+
+	pio0_spi0: pio0_spi0 {
+
+		infineon_cyw43_module: infineon_cyw43_module@0 {
+                	compatible = "infineon,cyw43";
+			reg = < 0x0 >;
+		        clocks = < &clocks RPI_PICO_CLKID_CLK_SYS >;
+                      
+                        spi-max-frequency = < 1000000 >;
+
+			wl-on-gpios = < &gpio0 23 GPIO_ACTIVE_HIGH >;
+                        bus-select-gpios = < &gpio0 24 GPIO_ACTIVE_HIGH >;
+			host-wake-gpios = <&gpio0 24 GPIO_ACTIVE_HIGH>;
+	
+                        pinctrl-0 = <&airoc_wifi_default>;
+			pinctrl-1 = <&airoc_wifi_host_wake>;
+			pinctrl-names = "default", "host_wake";
+                        
+		        status = "okay";
+
+                        cyw43_led: cyw43_led {	/* Pico W LED is on CYW43439 GPIO 0 */
+				compatible = "infineon,cyw43-led";
+			};
+			cyw43_gpio: cyw43_gpio {
+				compatible = "infineon,cyw43-gpio";
+                                gpio-controller;
+                                #gpio-cells = <2>;
+                                ngpios = <3>;
+			};
+			cyw43_bt_hci: cyw43_bt_hci {
+				compatible = "infineon,cyw43-bt-hci";
+			};
+
+		};
+	};
+};
