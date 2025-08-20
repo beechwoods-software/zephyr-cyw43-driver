@@ -54,7 +54,7 @@ static int zephyr_cyw43_bt_hci_open(const struct device *dev, bt_hci_recv_t recv
 {
 	int rv = 0;	
 	struct zephyr_cyw43_bt_hci_data *hci_data = dev->data;
-	
+	LOG_DBG("Calling zephyr_cyw43_bt_hci_open()");
 	hci_data->recv = recv;
 	
 	return rv;
@@ -64,7 +64,7 @@ static int zephyr_cyw43_bt_hci_close(const struct device *dev)
 {
 	int rv = 0;
 	struct zephyr_cyw43_bt_hci_data *hci_data = dev->data;
-	
+	LOG_DBG("Calling zephyr_cyw43_bt_hci_close()");
 	hci_data->recv = NULL;
 	
 	return rv;
@@ -77,6 +77,7 @@ void cyw43_bluetooth_hci_process(void) {
 	k_timeout_t timeout = K_FOREVER;
 	struct bt_hci_acl_hdr acl_hdr = { .len = 0 };
 	struct bt_hci_iso_hdr iso_hdr = { .len = 0 };
+	struct bt_hci_evt_hdr evt_hdr = { .len = 0 };
 	uint32_t cyw43_len;
 	uint32_t len;
 	const struct device *dev = DEVICE_DT_GET(DT_DRV_INST(0));
@@ -96,6 +97,12 @@ void cyw43_bluetooth_hci_process(void) {
 	LOG_DBG("cyw43_bluetooth_hci_process(), len = %d", len);
 	LOG_DBG("cyw43_bluetooth_hci_process(): packet_type = %d", packet_type);
 	
+	LOG_DBG("cyw43_bluetooth_hci_process() packet_type = %s",
+		 (packet_type == BT_HCI_H4_EVT ? "BT_HCI_H4_EVT" :
+		  (packet_type == BT_HCI_H4_ACL ? "BT_HCI_H4_ACL" :
+		   (packet_type == BT_HCI_H4_ISO ? "BT_HCI_H4_ISO" :
+		    "Unknown"))));
+	
 	switch (packet_type) {
 	case BT_HCI_H4_EVT:
 		if (rxmsg[EVT_HEADER_EVENT] == BT_HCI_EVT_LE_META_EVENT &&
@@ -105,13 +112,19 @@ void cyw43_bluetooth_hci_process(void) {
 		}
 		buf = bt_buf_get_evt(rxmsg[EVT_HEADER_EVENT],
 				     discardable, timeout);
-		len = sizeof(struct bt_hci_evt_hdr) + rxmsg[EVT_HEADER_SIZE];
+		memcpy(&evt_hdr, &rxmsg[1], sizeof(evt_hdr));
+		len = sizeof(evt_hdr) + rxmsg[EVT_HEADER_SIZE];
 		LOG_DBG("EVT len = %d", len);
+		if (buf != NULL && len > net_buf_tailroom(buf)) {
+			LOG_ERR("EVT too long: %d", len);
+			net_buf_unref(buf);
+			return;
+		}
 		break;
 	case BT_HCI_H4_ACL:
 		buf = bt_buf_get_rx(BT_BUF_ACL_IN, timeout);
 		memcpy(&acl_hdr, &rxmsg[1], sizeof(acl_hdr));
-		len = sizeof(struct bt_hci_acl_hdr) + sys_le16_to_cpu(acl_hdr.len);
+		len = sizeof(acl_hdr) + sys_le16_to_cpu(acl_hdr.len);
 		LOG_DBG("ACL len = %d", len);
 		if (buf != NULL && len > net_buf_tailroom(buf)) {
 			LOG_ERR("ACL too long: %d", len);
@@ -120,12 +133,16 @@ void cyw43_bluetooth_hci_process(void) {
 		}
 
 		break;
-	case BT_HCI_H4_ISO:
-	case BT_HCI_H4_SCO:
+        case BT_HCI_H4_ISO:
 		buf = bt_buf_get_rx(BT_BUF_ISO_IN, timeout);
 		memcpy(&iso_hdr, &rxmsg[1], sizeof(iso_hdr));
-		len = sizeof(struct bt_hci_iso_hdr) + bt_iso_hdr_len(sys_le16_to_cpu(iso_hdr.len));
+		len = sizeof(iso_hdr) + bt_iso_hdr_len(sys_le16_to_cpu(iso_hdr.len));
 		LOG_DBG("ISO len = %d", len);
+		if (buf != NULL && len > net_buf_tailroom(buf)) {
+			LOG_ERR("ACL too long: %d", len);
+			net_buf_unref(buf);
+			return;
+		}
 		break;
 	default:
 		buf = NULL;
@@ -160,20 +177,20 @@ static int zephyr_cyw43_bt_hci_send(const struct device *dev, struct net_buf *bu
 		    "Unknown")))));
 	
 	switch (bt_buf_get_type(buf)) {
-	case BT_BUF_CMD:
-		packet_type = BT_HCI_H4_CMD;
-		break;		
-	case BT_BUF_EVT:
-		packet_type = BT_HCI_H4_EVT;
-		break;
 	case BT_BUF_ACL_OUT:
 		packet_type = BT_HCI_H4_ACL;
 		break;
+	case BT_BUF_CMD:
+		packet_type = BT_HCI_H4_CMD;
+		break;		
 	case BT_BUF_ISO_OUT:
-		packet_type = BT_HCI_H4_ISO;
-		break;
+		if (IS_ENABLED(CONFIG_BT_ISO)) {
+			packet_type = BT_HCI_H4_ISO;
+			break;
+		}
 	default:
 		rv = -EINVAL;
+		LOG_ERR("Unknown Buffer type %d", bt_buf_get_type(buf));
 		break;
 	}
 	
@@ -185,6 +202,9 @@ static int zephyr_cyw43_bt_hci_send(const struct device *dev, struct net_buf *bu
 				
 		LOG_DBG("Calling cyw43_bluetooth_hci_write()");
 		rv = cyw43_bluetooth_hci_write(cyw43_txbuf, cyw43_len);
+		if (rv != 0) {
+			LOG_ERR("cyw43_bluetooth_hci_write() returned error=%d\n", rv);
+		}
 		LOG_DBG("cyw43_bluetooth_hci_write() rv=%d", rv);
 		LOG_HEXDUMP_DBG(buf->data, buf->len, "HCI TX data:");
 		LOG_DBG("zephyr_cyw43_bt_hci_send(), len = %d\n", buf->len);		
